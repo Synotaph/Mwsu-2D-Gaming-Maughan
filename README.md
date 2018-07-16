@@ -1,4 +1,4 @@
-# 3013-Algorithms-Maughan
+# MWSU-2D-Gaming-Maughan
 
 ![insert image here](https://i.imgur.com/oSgmi2B.jpg)
 
