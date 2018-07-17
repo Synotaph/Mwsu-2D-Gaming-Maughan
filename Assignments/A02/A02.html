@@ -41,6 +41,11 @@ var deathCount = 0;
 var death = false;
 var scoreText;
 var deathText;
+var coins;
+var firstaids;
+var mushrooms;
+var diamonds;
+var activeItems = 12;
 
 var game = new Phaser.Game(config);
 
@@ -105,25 +110,16 @@ function create ()
     //  Input Events
     cursors = this.input.keyboard.createCursorKeys();
 
-    //  Some stars to collect, 12 in total, evenly spaced 70 pixels apart along the x axis
-    stars = this.physics.add.group({
-        key: 'diamond',
-        repeat: 11,
-        setXY: { x: 12, y: 0, stepX: 70 }
-    });
-
-    stars.children.iterate(function (child) {
-
-        //  Give each star a slightly different bounce
-        child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
-
-    });
-
     bombs = this.physics.add.group();
     coins = this.physics.add.group();
     mushrooms = this.physics.add.group();
     diamonds = this.physics.add.group();
     firstaids = this.physics.add.group();
+    stars = this.physics.add.group();
+
+    createObjects();
+
+
 
     //  The score
     scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
@@ -140,9 +136,13 @@ function create ()
     this.physics.add.collider(firstaids, platforms);
 
     //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
-    this.physics.add.overlap(player, stars, collectStar, null, this);
-
+    this.physics.add.overlap(player, stars, collectStars, null, this);
+    this.physics.add.overlap(player, coins, collectCoins, null, this);
+    this.physics.add.overlap(player, diamonds, collectDiamonds, null, this);
+    this.physics.add.overlap(player, mushrooms, collectMushrooms, null, this);
+    this.physics.add.overlap(player, firstaids, collectFirstaids, null, this);
     this.physics.add.collider(player, bombs, hitBomb, null, this);
+
 }
 
 function update ()
@@ -181,17 +181,17 @@ function update ()
     }
 }
 
-function createObjects(count)
+function createObjects()
 {
-    for (var i = 0; i < count; i++)
+    for (var i = 0; i < 12; i++)
     {
-        var j = Phaser.Math.Between(0, count);
+        var j = Phaser.Math.Between(0, 24);
         if (j % 2 == 0)
         {
             var star = stars.create(12 + (i * 70), 0, 'star');
             star.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
         }
-        else if (j == 1)
+        else if (j % 3 == 0)
         {
             var mushroom = mushrooms.create(12 + (i * 70), 0, 'mushroom');
             mushroom.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
@@ -215,33 +215,105 @@ function createObjects(count)
     return;
 }
 
-function collectStar (player, star)
+function makeBomb()
+{
+    var x = (player.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
+
+    var bomb = bombs.create(x, 16, 'bomb');
+    bomb.setBounce(1);
+    bomb.setCollideWorldBounds(true);
+    bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+    bomb.allowGravity = false;
+}
+
+function collectStars (player, star)
 {
     star.disableBody(true, true);
+    activeItems--;
 
     //  Add and update the score
     score += 10;
     scoreText.setText('Score: ' + score);
 
-    if (stars.countActive(true) === 0)
+    if (activeItems == 0)
     {
-        //  A new batch of stars to collect
-        stars.children.iterate(function (child) {
-
-            child.enableBody(true, child.x, 0, true, true);
-
-        });
-
-        var x = (player.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
-
-        var bomb = bombs.create(x, 16, 'bomb');
-        bomb.setBounce(1);
-        bomb.setCollideWorldBounds(true);
-        bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
-        bomb.allowGravity = false;
-
+        makeBomb();
+        createObjects();
+        activeItems = 12;
     }
 }
+
+function collectCoins (player, coin)
+{
+    coin.disableBody(true, true);
+    activeItems--;
+
+    //  Add and update the score
+    score += 20;
+    scoreText.setText('Score: ' + score);
+
+    if (activeItems == 0)
+    {
+        makeBomb();
+        createObjects();
+        activeItems = 12;
+    }
+}
+
+function collectDiamonds (player, diamond)
+{
+    diamond.disableBody(true, true);
+    activeItems--;
+
+    //  Add and update the score
+    score += 50;
+    scoreText.setText('Score: ' + score);
+
+    if (activeItems == 0)
+    {
+        makeBomb();
+        createObjects();
+        activeItems = 12;
+    }
+}
+
+function collectMushrooms (player, mushroom)
+{
+    mushroom.disableBody(true, true);
+    activeItems--;
+
+    //  Add and update the score
+    if (deathCount > 0)
+    {
+        deathCount -= 1;
+        deathText.setText('deaths: ' + deathCount);
+    }
+
+    if (activeItems == 0)
+    {
+        makeBomb();
+        createObjects();
+        activeItems = 12;
+    }
+}
+
+function collectFirstaids (player, firstaid)
+{
+    firstaid.disableBody(true, true);
+    activeItems--;
+
+    //  Add and update the score
+    deathCount = 0;
+    deathText.setText('deaths: ' + deathCount);
+
+    if (activeItems == 0)
+    {
+        makeBomb();
+        createObjects();
+        activeItems = 12;
+    }
+}
+
 
 function hitBomb (player, bomb)
 {
