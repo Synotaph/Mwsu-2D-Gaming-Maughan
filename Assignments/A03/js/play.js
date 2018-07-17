@@ -75,8 +75,29 @@ var play = {
 		}
 	},
 
-	spawnObstacle: function (entity, x, y, speed, has_given_point) {
-		var obstacle = this.obstacles.create(x, y, 'obstacle', entity)
+	spawnObstacle: function (entity, x, y, speed, has_given_point) 
+	{
+		var platform_picker = Math.random() * 5
+		if (platform_picker < 1)
+		{
+			var obstacle = this.obstacles.create(x, y, 'obstacle1', entity)
+		}
+		else if (platform_picker < 2)
+		{
+			var obstacle = this.obstacles.create(x, y, 'obstacle2', entity)
+		}
+		else if (platform_picker < 3)
+		{
+			var obstacle = this.obstacles.create(x, y, 'obstacle3', entity)
+		}
+		else if (platform_picker < 4)
+		{
+			var obstacle = this.obstacles.create(x, y, 'obstacle4', entity)
+		}
+		else
+		{
+			var obstacle = this.obstacles.create(x, y, 'obstacle5', entity)
+		}
 
 		game.physics.enable(obstacle, Phaser.Physics.ARCADE)
 

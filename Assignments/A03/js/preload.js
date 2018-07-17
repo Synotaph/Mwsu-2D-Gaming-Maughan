@@ -12,7 +12,11 @@ var preload = {
 		// game entities/world
 		//this.load.image('player', 'images/player_x1.png')
 		this.load.image('player', 'images/parachute.png')
-		this.load.image('obstacle', 'images/grass-platform.png')
+		this.load.image('obstacle1', 'images/grass-platform.png')
+		this.load.image('obstacle2', 'images/floating-platform.png')
+		this.load.image('obstacle3', 'images/bronze-platform.png')
+		this.load.image('obstacle4', 'images/old-platform.png')
+		this.load.image('obstacle5', 'images/platform_thin_x7.png')
 		this.load.image('pause', 'images/pause.png')
 		this.load.image('bg', 'images/cream.png')
 
