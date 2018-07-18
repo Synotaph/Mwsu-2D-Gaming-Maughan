@@ -62,7 +62,7 @@ var play = {
 		{
 			var spawnPoint = Math.random() * (w)
 			var randomSpeed = (Math.random() * 100) + (game.global.score * 2) + 10
-			this.spawnObstacle(game.global.obstacle_id++, spawnPoint, game.height, speed = randomSpeed, has_given_point = false)
+			this.spawnObstacle(game.global.obstacle_id++, spawnPoint, game.height, speed = randomSpeed)
 		}
 
 		this.move();
@@ -74,7 +74,7 @@ var play = {
 		}
 	},
 
-	spawnObstacle: function (entity, x, y, speed, has_given_point) 
+	spawnObstacle: function (entity, x, y, speed) 
 	{
 		var platform_picker = Math.random() * 5
 		if (platform_picker < 1)
@@ -106,7 +106,6 @@ var play = {
 		obstacle.anchor.setTo(.5, .5)
 		obstacle.scale.setTo(.5, .125)
 		obstacle.body.velocity.y = -speed
-		obstacle.has_given_point = has_given_point
 
 		obstacle.checkWorldBounds = true;
 		// Kill obstacle/enemy if vertically out of bounds
