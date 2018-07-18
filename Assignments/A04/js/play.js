@@ -58,7 +58,7 @@ var play = {
 		game.physics.arcade.overlap(this.player, this.obstacles, this.killPlayer, null, this)
 
 		// Spawn enemies
-		if (frame_counter % (90 - game.global.score) == 0) 
+		if (frame_counter % (1 + Math.abs(119 - game.global.score)) == 0)
 		{
 			var spawnPoint = Math.random() * (w)
 			var randomSpeed = (Math.random() * 100) + (game.global.score * 2) + 10
