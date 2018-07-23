@@ -6,8 +6,6 @@ var BG_COLOR = COLORS_PASTEL[Math.floor(Math.random() * (COLORS_PASTEL.length - 
 
 var game = new Phaser.Game(450, 550, Phaser.Canvas, "game")
 
-game.vertibird = new Vertibird(game);
-
 game.global = {
 	score: 0,
 	best_score: 0,
