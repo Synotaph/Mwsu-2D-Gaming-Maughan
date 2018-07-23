@@ -11,7 +11,7 @@ var preload = {
 		
 		// game entities/world
 		//this.load.image('player', 'images/player_x1.png')
-		this.load.image('player', 'images/parachute.png')
+		this.load.image('player', 'images/vertibird-2.png')
 		this.load.image('obstacle1', 'images/grass-platform.png')
 		this.load.image('obstacle2', 'images/floating-platform.png')
 		this.load.image('obstacle3', 'images/bronze-platform.png')
@@ -19,6 +19,7 @@ var preload = {
 		this.load.image('obstacle5', 'images/platform_thin_x7.png')
 		this.load.image('pause', 'images/pause.png')
 		this.load.image('bg', 'images/cream.png')
+		game.load.spritesheet('explosion', 'assets/explosion.png', 256, 250);
 
 		// audio
 		this.load.audio('bg_spin', 'sounds/spin_bg_music.mp3')
