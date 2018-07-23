@@ -4,7 +4,8 @@ var play = {
 		// Game width and height for convenience
 		w = game.width
 		h = game.height
-
+		leftRate = 0		// how fast to move left when pressing left arrow key
+		rightRate = 0		// how fast to move right when pressing left arrow key
 		frame_counter = 0
 
 		// Bg color
@@ -31,14 +32,18 @@ var play = {
 		// Obstacles
 		this.obstacles = game.add.group()
 
+		this.explosions = game.add.group();
+		this.explosions.createMultiple(10, 'kaboom');
+		this.explosions.forEach(this.setupObstacles, this);
+
 		// Player
-		this.player = game.add.sprite(game.width / 2, 250, 'player')
-		game.physics.enable(this.player, Phaser.Physics.ARCADE)
-		this.player.enableBody = true
-		this.player.body.collideWorldBounds = true
-		this.player.scale.setTo(.5, .5)
-		this.player.anchor.setTo(.5, .5)
-		this.player.body.setSize(this.player.width - 10, this.player.height)
+		// this.player = game.add.sprite(game.width / 2, 250, 'player')
+		// game.physics.enable(this.player, Phaser.Physics.ARCADE)
+		// this.player.enableBody = true
+		// this.player.body.collideWorldBounds = true
+		// this.player.scale.setTo(.5, .5)
+		// this.player.anchor.setTo(.5, .5)
+		// this.player.body.setSize(this.player.width - 10, this.player.height)
 
 		// Score label
 		this.bmpText = game.add.bitmapText(game.width / 2, 100, 'fontUsed', '', 150);
@@ -48,6 +53,17 @@ var play = {
 		// Support for mouse click and touchscreen input
 		game.input.onDown.add(this.onDown, this)
 
+		// Support for mouse click and touchscreen input
+		game.input.onDown.add(this.onDown, this)
+
+		// Another way to get input from keyboard (arrow keys)
+		this.downKey = game.input.keyboard.addKey(Phaser.Keyboard.DOWN);
+		this.leftKey = game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
+		this.rightKey = game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
+
+		// Adding a reference to the space bar
+		this.fireButton = this.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
+
 		this.pauseAndUnpause(game)
 	},
 
@@ -55,7 +71,10 @@ var play = {
 		this.bmpText.text = game.global.score
 
 		// Collision
-		game.physics.arcade.overlap(this.player, this.obstacles, this.killPlayer, null, this)
+		game.physics.arcade.overlap(game.vertibird.ship, this.obstacles, this.killPlayer, null, this)
+
+		// Check for overlap between bullets and obstacles
+		game.physics.arcade.overlap(game.vertibird.bullets, this.obstacles, this.destroyItem, null, this);
 
 		// Spawn enemies
 		if (frame_counter % (1 + Math.abs(119 - game.global.score)) == 0)
@@ -121,40 +140,88 @@ var play = {
 		console.log(this.obstacles.children.length);
 	},
 
+	/**
+	 * Determines score. Needs changed
+	 */
 	scorePoint: function () {
-		//console.log(this.obstacles)
+		
 		var point = 0;
 		var obstacles = this.obstacles.children;
+
+		//console.log(obstacles)
 
 		for (var i = 0; i < obstacles.length; i++) {
 			if (obstacles[i].visible) {
 				// console.log("vis: ")
 				// console.log(obstacles[i].y,this.player.y);
-				let py = this.player.y;
+				let py = game.ufo.ship.y;
 				let oy = obstacles[i].y;
-				let ox = obstacles[i].x;
 
-				//if player is below obstacle and within 5 pixels they score a point
+				//if player is below obstacle and within 5 pixels
 				if (py > oy && Math.abs(py - oy) < 5) {
 					point++;
 					this.sound.score.play('', 0, 0.5, false)
-					obstacles[i].y -= 10
 				}
 			}
 		}
 		return point;
 	},
 
+	/**
+	 * Kills player. Things commented out for debugging.
+	 */
 	killPlayer: function (player) {
 
 		//issues with this
 		//game.plugins.screenShake.shake(20);
 		this.sound.kill.play('', 0, 0.5, false)
-		player.kill();
-		game.state.start('gameOver');
+		//player.kill();
+		//game.state.start('gameOver');
 
 	},
+	/**
+	 * Source: https://phaser.io/examples/v2/games/invaders
+	 * 
+	 * Collision handler for a bullet and obstacle
+	 */
+	destroyItem: function(bullet, obstacle){
+		bullet.kill();
+		obstacle.kill();
+		var explosion = this.explosions.getFirstExists(false);
+		explosion.reset(obstacle.body.x, obstacle.body.y);
+		explosion.play('kaboom', 30, false, true);
+	},
 
+	/**
+	 * Tap on touchscreen or click with mouse
+	 * not used for this game
+	 */
+	onDown: function (pointer) {
+		//console.log(pointer);
+	},
+	
+	/**
+	 * Adds an explosion animation to each obstacle when created
+	 */
+	setupObstacles: function (obstacle) {
+
+		obstacle.anchor.x = 0.5;
+		obstacle.anchor.y = 0.5;
+		obstacle.animations.add('explosion');
+	
+	},
+
+
+	/**
+	 * Adds an explosion animation to each obstacle when created
+	 */
+	setupObstacles: function (obstacle) {
+
+		obstacle.anchor.x = 0.5;
+		obstacle.anchor.y = 0.5;
+		obstacle.animations.add('kaboom');
+	
+	},
 
 	// Tap on touchscreen or click with mouse
 	onDown: function (pointer) {},
