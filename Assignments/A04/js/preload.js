@@ -19,13 +19,15 @@ var preload = {
 		this.load.image('pause', 'images/pause.png')
 		this.load.image('bg', 'images/cream.png')
 		this.load.image('bomb', 'images/mini-nuke-right.png')
+		this.load.spritesheet('explosion', 'images/explosions.png', 128, 125);
 
 		// audio
 		this.load.audio('bg_spin', 'sounds/spin_bg_music.mp3')
 		this.load.audio('bg_edm', 'sounds/edm_bg_music.mp3')
 		this.load.audio('score', 'sounds/score.wav')
-		this.load.audio('kill', 'sounds/Ouch.ogg')
+		this.load.audio('kill', 'sounds/Wilhelm_Scream.ogg')
 		this.load.audio('music', 'sounds/abstractionRapidAcrobatics.wav')
+		this.load.audio('boom', 'sounds/boom.mp3')
 
 		// font
 		game.load.bitmapFont('fontUsed', 'font/ganonwhite/font.png', 'font/ganonwhite/font.xml');

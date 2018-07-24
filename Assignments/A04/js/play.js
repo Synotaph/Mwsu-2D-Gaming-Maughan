@@ -6,6 +6,7 @@ var play = {
 		h = game.height
 		leftRate = 0		// how fast to move left when pressing left arrow key
 		rightRate = 0
+		firerate = 1
 		frame_counter = 0
 
 		// Bg color
@@ -19,6 +20,7 @@ var play = {
 
 		// Death sound
 		this.sound.kill = game.add.audio('kill')
+		this.sound.boom = game.add.audio('boom')
 
 		// Music
 		this.music = game.add.audio('music')
@@ -44,13 +46,17 @@ var play = {
         this.bombs.enableBody = true;
 	    // We're going to set the body type to the ARCADE physics, since we don't need any advanced physics
         this.bombs.physicsBodyType = Phaser.Physics.ARCADE;
-        
         this.bombs.createMultiple(10, 'bomb');
-        this.bombs.callAll('events.onOutOfBounds.add()', 'events.onOutOfBounds', this.resetBullets);
+        this.bombs.callAll('events.onOutOfBounds.add', 'events.onOutOfBounds', this.resetbomb);
         this.bombs.callAll('anchor.setTo', 'anchor', 0.5, 1);
         this.bombs.callAll('scale.setTo', 'scale', 0.25, 0.25);
-        this.bombs.callAll('body.setSize', 'body', 4, 4);
+        this.bombs.callAll('body.setSize', 'body', .5, .5);
         this.bombs.setAll('checkWorldBounds', true);
+
+		//  An explosion pool that gets attached to each icon
+		this.explosions = game.add.group();
+		this.explosions.createMultiple(10, 'explosion');
+		this.explosions.forEach(this.setupObstacles, this);
 
 		// Score label
 		this.bmpText = game.add.bitmapText(game.width / 2, 100, 'fontUsed', '', 150);
@@ -71,7 +77,7 @@ var play = {
 
 		// Collision
 		game.physics.arcade.overlap(this.player, this.obstacles, this.killPlayer, null, this)
-		
+		game.physics.arcade.overlap(this.bombs, this.obstacles, this.destroyItem, null, this)
 
 		// Spawn enemies
 
@@ -104,16 +110,20 @@ var play = {
 
 		if (this.downKey.isDown)
 		{
-			this.fireBombs();
+			firerate++;
+			if (firerate % 3 == 0)
+			{
+				this.fireBombs();
+			}
+		}
+		else
+		{
+			firerate = 1;
 		}
 
 		this.move();
 
 		frame_counter++
-		if (frame_counter % 2 == 0)
-		{
-			game.global.score += this.scorePoint();
-		}
 	},
 
 	spawnObstacle: function (entity, x, y, speed, has_given_point) 
@@ -164,37 +174,13 @@ var play = {
 		console.log(this.obstacles.children.length);
 	},
 
-	scorePoint: function () {
-		//console.log(this.obstacles)
-		var point = 0;
-		var obstacles = this.obstacles.children;
-
-		for (var i = 0; i < obstacles.length; i++) {
-			if (obstacles[i].visible) {
-				// console.log("vis: ")
-				// console.log(obstacles[i].y,this.player.y);
-				let py = this.player.y;
-				let oy = obstacles[i].y;
-				let ox = obstacles[i].x;
-
-				//if player is below obstacle and within 5 pixels they score a point
-				if (py > oy && Math.abs(py - oy) < 5) {
-					point++;
-					this.sound.score.play('', 0, 0.5, false)
-				}
-			}
-		}
-		return point;
-	},
-
-	killPlayer: function (player) {
-
+	killPlayer: function (player) 
+	{
 		//issues with this
 		//game.plugins.screenShake.shake(20);
 		this.sound.kill.play('', 0, 0.5, false)
 		player.kill();
 		game.state.start('gameOver');
-
 	},
 
 
@@ -259,15 +245,14 @@ var play = {
 
 	fireBombs: function() 
 	{
-        // Get the first laser that's inactive, by passing 'false' as a parameter
-        var bullet = this.bombs.getFirstExists(false);
+		var bullet = this.bombs.getFirstExists(false);
         if (bullet) 
 		{
-            // If we have a laser, set it to the starting position
+            // If we have a bomb, set it to the starting position
             bullet.reset(this.player.x, this.player.y + 20);
             // Give it a velocity of -500 so it starts shooting
-            bullet.body.velocity.y = 1000;
-        }
+            bullet.body.velocity.y = 500;
+		}
     },
 
 	resetbomb: function(bomb) 
@@ -275,6 +260,32 @@ var play = {
         // Destroy the laser
         bomb.kill();
     },
+
+	setupObstacles: function (obstacle) 
+	{
+
+		obstacle.anchor.x = 0.5;
+		obstacle.anchor.y = 0.5;
+		obstacle.animations.add('explosion');
+	},
+
+	destroyItem: function(bomb, obstacle)
+	{
+		bomb.kill();
+		obstacle.kill();
+		var explosion = this.explosions.getFirstExists(false);
+		explosion.reset(obstacle.body.x + (obstacle.body.width / 2), obstacle.body.y);
+		this.sound.boom.play('', 0, 0.5, false)
+		explosion.play('explosion', 30, false, true);
+		if ((game.global.score + 1) % 25 == 0)
+		{
+			game.global.score += (game.global.score / 25);
+		}
+		else
+		{
+			game.global.score++;
+		}
+	},
 
 	pauseAndUnpause: function (game) {
 		var pause_button = game.add.sprite(game.width - 40, 40, 'pause')
