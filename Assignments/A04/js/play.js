@@ -31,8 +31,8 @@ var play = {
 		// Obstacles
 		this.obstacles = game.add.group()
 
-		// Player
-		this.player = game.add.sprite(game.width / 2, 250, 'player')
+		// Players
+		this.player = game.add.sprite(game.width / 4, 250, 'player')
 		game.physics.enable(this.player, Phaser.Physics.ARCADE)
 		this.player.enableBody = true
 		this.player.body.collideWorldBounds = true
