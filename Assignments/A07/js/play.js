@@ -1,18 +1,17 @@
 var play = {
 	create: function () {
 		console.log("play.js");
-		// Game width and height for convenience
-		w = game.width
+
+	
+		w = game.width		// Game width and height for convenience
 		h = game.height
 		leftRate = 0		// how fast to move left when pressing left arrow key
-		rightRate = 0
-		firerate = 1
-		frame_counter = 0
+		rightRate = 0		// how fast to move right when pressing left arrow key
+		frame_counter = 0	// variable to help with the creation of obstacles
 
-		// Bg color
-		game.stage.backgroundColor = BG_COLOR
-		// Bg image
-		this.bg = game.add.image(0, 0, 'bg')
+		//  The scrolling starfield background
+		this.starfield = game.add.tileSprite(0, 0, w, h, 'starfield');
+
 
 		// Score sound
 		this.sound.score = game.add.audio('score')
@@ -20,7 +19,6 @@ var play = {
 
 		// Death sound
 		this.sound.kill = game.add.audio('kill')
-		this.sound.boom = game.add.audio('boom')
 
 		// Music
 		this.music = game.add.audio('music')
@@ -28,127 +26,136 @@ var play = {
 
 		this.physics.startSystem(Phaser.Physics.ARCADE)
 
-		// Obstacles
+		// Obstacles (little icons of food)
 		this.obstacles = game.add.group()
-
-		// Players
-		this.player = game.add.sprite(game.width / 4, 250, 'player')
-		game.physics.enable(this.player, Phaser.Physics.ARCADE)
-		this.player.enableBody = true
-		this.player.body.collideWorldBounds = true
-		this.player.scale.setTo(.25, .25)
-		this.player.anchor.setTo(.5, .5)
-		this.player.body.setSize(this.player.width - 10, this.player.height)
-
-		// Bombs
-		this.bombs = game.add.group();
-		// To move the sprites later on, we have to enable the body
-        this.bombs.enableBody = true;
-	    // We're going to set the body type to the ARCADE physics, since we don't need any advanced physics
-        this.bombs.physicsBodyType = Phaser.Physics.ARCADE;
-        this.bombs.createMultiple(10, 'bomb');
-        this.bombs.callAll('events.onOutOfBounds.add', 'events.onOutOfBounds', this.resetbomb);
-        this.bombs.callAll('anchor.setTo', 'anchor', 0.5, 1);
-        this.bombs.callAll('scale.setTo', 'scale', 0.25, 0.25);
-        this.bombs.callAll('body.setSize', 'body', .5, .5);
-        this.bombs.setAll('checkWorldBounds', true);
 
 		//  An explosion pool that gets attached to each icon
 		this.explosions = game.add.group();
-		this.explosions.createMultiple(10, 'explosion');
+		this.explosions.createMultiple(10, 'kaboom');
 		this.explosions.forEach(this.setupObstacles, this);
+
+		// Player
+		game.ufo.create();	//calls the create method of the ufo object
+
 
 		// Score label
 		this.bmpText = game.add.bitmapText(game.width / 2, 100, 'fontUsed', '', 150);
 		this.bmpText.anchor.setTo(.5, .5)
 		this.bmpText.scale.setTo(.3, .3)
 
+		///// Tracking keyboard inputs /////////////
+
+		// Fire the ufo big laser when the 'X' key is pressed
+		laserFire = this.input.keyboard.addKey(Phaser.Keyboard.X);
+		laserFire.onDown.add(game.ufo.startLaser,game.ufo);
+
 		// Support for mouse click and touchscreen input
 		game.input.onDown.add(this.onDown, this)
+
+		// Another way to get input from keyboard (arrow keys)
 		this.downKey = game.input.keyboard.addKey(Phaser.Keyboard.DOWN);
 		this.leftKey = game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
 		this.rightKey = game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
+
+		// Adding a reference to the space bar
+		this.fireButton = this.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
 
 		this.pauseAndUnpause(game)
 	},
 
 	update: function () {
+		// Place score on game screen
 		this.bmpText.text = game.global.score
 
-		// Collision
-		game.physics.arcade.overlap(this.player, this.obstacles, this.killPlayer, null, this)
-		game.physics.arcade.overlap(this.bombs, this.obstacles, this.destroyItem, null, this)
+		// Move background to look like space is moving
+		this.starfield.tilePosition.y -= 2;
+
+		// Check for overlap between game ship and obstacles
+		game.physics.arcade.overlap(game.ufo.ship, this.obstacles, this.killPlayer, null, this)
+
+		// Check for overlap between bullets and obstacles
+		game.physics.arcade.overlap(game.ufo.bullets, this.obstacles, this.destroyItem, null, this);
+
+		
+		spawn_rate = 100-game.global.score;				// how fast to add new obstacles to screen (smaller value = more obstacles)
+		obstacle_speed = game.global.score * 1.5 + 200; // how fast should each obstacle move
+
+		// Spawn rate continuously shrinks so stop it at 5
+		if(spawn_rate < 5){
+			spawn_rate = 5;
+		}
 
 		// Spawn enemies
-
-		if (frame_counter % 90 == 0) 
-		{
-			var spawnPoint = Math.random() * (w)
-			var randomSpeed = (Math.random() * 150) + 50
-			this.spawnObstacle(game.global.obstacle_id++, spawnPoint, game.height, speed = randomSpeed, has_given_point = false)
+		if (frame_counter % spawn_rate == 0) {
+			//console.log(spawn_rate);
+			//console.log(obstacle_speed);
+			this.spawnObstacle(game.rnd.integerInRange(32,game.width-32), game.height, speed = obstacle_speed)
 		}
 
-		if (this.leftKey.isDown)
-		{
+
+	    //////// Interacting with screen ///////////////
+		if (game.input.activePointer.isDown) {
+			game.ufo.shipMove();
+		}else{
+			game.ufo.shipStill();
+		}
+
+		// The down arrow was pressed
+		if (this.downKey.isDown) {
+			//game.ufo.startLaser();
+			game.ufo.fireBolt();
+		}
+
+		// The left array is pressed 
+		if (this.leftKey.isDown){
 			leftRate++;  // increase left rate as long as key is pressed
-			this.keyMove(-1,leftRate);
-		}
-		else
-		{
+			game.ufo.shipMove(-1,leftRate);
+		}else{
 			leftRate=0; // key released
 		}
 
-		if (this.rightKey.isDown)
-		{
-			rightRate++;  // increase left rate as long as key is pressed
-			this.keyMove(1,rightRate);
-		}
-		else
-		{
+		// The right arrow is pressed
+		if (this.rightKey.isDown){
+			rightRate++; // increase right rate as long as key is pressed
+			game.ufo.shipMove(1,rightRate);
+		}else{
 			rightRate=0; // key released
 		}
 
-		if (this.downKey.isDown)
+		// Fire button was attached to space bar above
+		if (this.fireButton.isDown)
 		{
-			firerate++;
-			if (firerate % 3 == 0)
-			{
-				this.fireBombs();
-			}
-		}
-		else
-		{
-			firerate = 1;
+			game.ufo.fireBullets();
 		}
 
-		this.move();
 
-		frame_counter++
+		// Check to see if we score any points
+		// needs changed since we added bullets
+		game.global.score += this.scorePoint();
+
+		// Was used to get to next level.
+		// if (game.global.score >= 10) {
+		// 	game.global.level++;
+		// 	game.state.start('mainMenu');
+		// }
+
+		frame_counter++;
 	},
+	
+    /**
+	 * spawn a new obstacle
+	 * 
+	 * @param x : x coord
+	 * @param y : y coord
+	 * @param speed : speed to move across game board
+	 */
+	spawnObstacle: function (x, y, speed) {
+		// randomly choose an icon from an array of icon names
+		var choice = game.rnd.integerInRange(0, game.global.obstacle_icons.length-1);
+		var name = game.global.obstacle_icons[choice];
 
-	spawnObstacle: function (entity, x, y, speed, has_given_point) 
-	{
-		var platform_picker = Math.random() * 5
-		if (platform_picker < 1)
-		{
-			var obstacle = this.obstacles.create(x, y, 'obstacle1', entity)
-		}
-		else if (platform_picker < 2)
-		{
-			var obstacle = this.obstacles.create(x, y, 'obstacle2', entity)
-		}
-		else if (platform_picker < 3)
-		{
-			var obstacle = this.obstacles.create(x, y, 'obstacle3', entity)
-		}
-		else if (platform_picker < 4)
-		{
-			var obstacle = this.obstacles.create(x, y, 'obstacle4', entity)
-		}
-		else
-		{
-			var obstacle = this.obstacles.create(x, y, 'obstacle5', entity)
-		}
+		//create the obstacle with its randomly chosen name
+		var obstacle = this.obstacles.create(x, y, 'icon-'+name)
 
 		game.physics.enable(obstacle, Phaser.Physics.ARCADE)
 
@@ -156,137 +163,100 @@ var play = {
 		obstacle.body.colliderWorldBounds = true
 		obstacle.body.immovable = true
 		obstacle.anchor.setTo(.5, .5)
-		obstacle.scale.setTo(.5, .125)
+		obstacle.scale.setTo(.75, .75)
+		obstacle.body.setSize(obstacle.width-5, obstacle.height-20);
 		obstacle.body.velocity.y = -speed
-		obstacle.has_given_point = has_given_point
 
 		obstacle.checkWorldBounds = true;
+
 		// Kill obstacle/enemy if vertically out of bounds
 		obstacle.events.onOutOfBounds.add(this.killObstacle, this);
 
 		obstacle.outOfBoundsKill = true;
-		console.log(this.obstacles);
 	},
 
+	/**
+	 * removes an obstacle from its group
+	 */
 	killObstacle: function (obstacle) {
-		console.log(obstacle);
 		this.obstacles.remove(obstacle);
-		console.log(this.obstacles.children.length);
 	},
 
-	killPlayer: function (player) 
-	{
-		//issues with this
-		//game.plugins.screenShake.shake(20);
-		this.sound.kill.play('', 0, 0.5, false)
-		player.kill();
-		game.state.start('gameOver');
-	},
-
-
-	// Tap on touchscreen or click with mouse
-	onDown: function (pointer) {},
-
-	// Move player
-	move: function () {
-		if (game.input.activePointer.isDown) 
-			{//console.log(game.input.x);
-			let rate = this.moveSpeed(game.input.x, game.width);
-			let angle = this.moveAngle(rate, 3);
-			//console.log("rate: " + rate);
-			this.player.x += rate;
-			this.player.angle = angle;
-			}
-		else {
-			this.player.angle = 0;
-		}
-	},
-
-	keyMove: function (direction=0,rate=0) {
-        //console.log(game.input.x);
-        var angle = 0;
-        if(direction == 0 && rate==0){
-            rate = this.moveSpeed(game.input.x, game.width);
-        }else{
-            rate = Math.floor(rate / 3) * direction;
-        }
-        
-        angle = this.moveAngle(rate, 3); 
-        
-
-        this.player.x += rate;
-        this.player.angle = angle;
-    },
-
-	moveAngle: function (rate, factor) {
-
-		return rate * factor;
-	},
-
-	moveSpeed: function (x, width, skill = 2) {
-		var ratio = 0;
-
-		if (x < width / 2) {
-			ratio = x / (width / 2);
-			ratio *= 10;
-			ratio = Math.ceil(ratio);
-			ratio /= 2;
-			rate = (5 - ratio) * -1;
-		} else {
-			ratio = x / width;
-			ratio *= 10;
-			ratio = Math.ceil(ratio);
-			ratio /= 2;
-			rate = ratio;
-		}
-		console.log(rate * skill);
-		return rate * skill;
-	},
-
-	fireBombs: function() 
-	{
-		var bullet = this.bombs.getFirstExists(false);
-        if (bullet) 
-		{
-            // If we have a bomb, set it to the starting position
-            bullet.reset(this.player.x, this.player.y + 20);
-            // Give it a velocity of -500 so it starts shooting
-            bullet.body.velocity.y = 500;
-		}
-    },
-
-	resetbomb: function(bomb) 
-	{
-        // Destroy the laser
-        bomb.kill();
-    },
-
-	setupObstacles: function (obstacle) 
-	{
+	/**
+	 * Adds an explosion animation to each obstacle when created
+	 */
+	setupObstacles: function (obstacle) {
 
 		obstacle.anchor.x = 0.5;
 		obstacle.anchor.y = 0.5;
-		obstacle.animations.add('explosion');
+		obstacle.animations.add('kaboom');
+	
 	},
 
-	destroyItem: function(bomb, obstacle)
-	{
-		bomb.kill();
+	/**
+	 * Determines score. Needs changed
+	 */
+	scorePoint: function () {
+		
+		var point = 0;
+		var obstacles = this.obstacles.children;
+
+		//console.log(obstacles)
+
+		for (var i = 0; i < obstacles.length; i++) {
+			if (obstacles[i].visible) {
+				// console.log("vis: ")
+				// console.log(obstacles[i].y,this.player.y);
+				let py = game.ufo.ship.y;
+				let oy = obstacles[i].y;
+
+				//if player is below obstacle and within 5 pixels
+				if (py > oy && Math.abs(py - oy) < 5) {
+					point++;
+					this.sound.score.play('', 0, 0.5, false)
+				}
+			}
+		}
+		return point;
+	},
+
+	/**
+	 * Kills player. Things commented out for debugging.
+	 */
+	killPlayer: function (player) {
+
+		//issues with this
+		//game.plugins.screenShake.shake(20);
+		this.sound.kill.play('', 0, 0.5, false)
+		//player.kill();
+		//game.state.start('gameOver');
+
+	},
+	/**
+	 * Source: https://phaser.io/examples/v2/games/invaders
+	 * 
+	 * Collision handler for a bullet and obstacle
+	 */
+	destroyItem: function(bullet, obstacle){
+		bullet.kill();
 		obstacle.kill();
 		var explosion = this.explosions.getFirstExists(false);
-		explosion.reset(obstacle.body.x + (obstacle.body.width / 2), obstacle.body.y);
-		this.sound.boom.play('', 0, 0.5, false)
-		explosion.play('explosion', 30, false, true);
-		if ((game.global.score + 1) % 25 == 0)
-		{
-			game.global.score += (game.global.score / 25);
-		}
-		else
-		{
-			game.global.score++;
-		}
+		explosion.reset(obstacle.body.x, obstacle.body.y);
+		explosion.play('kaboom', 30, false, true);
 	},
 
+	/**
+	 * Tap on touchscreen or click with mouse
+	 * not used for this game
+	 */
+	onDown: function (pointer) {
+		//console.log(pointer);
+	},
+
+	/**
+	 * This method lets a user pause the game by pushing the pause button in
+	 * the top right of the screen. 
+	 */
 	pauseAndUnpause: function (game) {
 		var pause_button = game.add.sprite(game.width - 40, 40, 'pause')
 		pause_button.anchor.setTo(.5, .5)
@@ -309,17 +279,5 @@ var play = {
 					pause_watermark.destroy()
 				}
 			}, self)
-	},
-
-	render: function () {
-		debug = false
-		if (debug) {
-			// Show hitbox
-			game.debug.body(this.player)
-
-			for (var i = 0; i < obstacles.length; i++) {
-				game.debug.body(obstacles[i])
-			}
-		}
 	}
 }

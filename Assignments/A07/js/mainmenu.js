@@ -12,7 +12,7 @@ var mainMenu = {
 
 		// Title
 		var logo = game.add.bitmapText(w / 2, -100, 'fontUsed', '', 75)
-		logo.text = GAMETITLE
+		logo.text = game.global.game_title;
 		logo.anchor.setTo(0.5, 0.5)
 		game.add.tween(logo).to({
 			y: h / 2 - 80
@@ -20,7 +20,7 @@ var mainMenu = {
 
 		// Help
 		var label = game.add.bitmapText(w / 2, h - 100, 'fontUsed', '', 40);
-		label.text = 'Make Tom Petty proud'
+		label.text = 'Level ' + game.global.level;
 		label.anchor.setTo(0.5, 0.5)
 		label.alpha = 0
 		game.add.tween(label).delay(500).to({
@@ -36,6 +36,10 @@ var mainMenu = {
 		game.input.onDown.add(this.listener)
 	},
 	listener: function () {
-		game.state.start('play')
+		if(game.global.score < 3){
+			game.state.start('play')
+		}else if(game.global.score >= 3){
+			game.state.start('play2')
+		}
 	}
 }
